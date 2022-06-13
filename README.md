@@ -6,8 +6,10 @@
 下载二进制程序后直接运行即可
 
 ```bash
-./go-tools-api
+./go-tools-api -c app.conf
 ```
+
+app.conf文件的内容可参考仓库内conf/app.conf.example文件
 
 # 3. 二次开发
 ## 3.1. 环境依赖
@@ -44,5 +46,5 @@ go get -u
 ```
 # 4. 感谢
 项目技术依赖
-* echo
-  * https://github.com/labstack/echo/
+* gin
+  * https://github.com/gin-gonic/gin

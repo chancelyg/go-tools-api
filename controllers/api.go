@@ -3,69 +3,47 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"go-tools-api/m/models"
+	"go-tools-api/m/utils"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"go-tools-api/models"
-
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 )
 
 var ImagePath string
 
 // Handler
-func IP(c echo.Context) error {
-	r := &models.Response{
-		Status: 1,
-		Msg:    "查询成功",
-		Data: map[string]interface{}{
-			"ip": c.RealIP(),
-		},
-	}
-	return c.JSON(http.StatusOK, r)
+func IP(c *gin.Context) {
+	c.JSON(200, successResponse("Query success", map[string]interface{}{"ip": c.ClientIP()}))
 }
 
-func Telegram(c echo.Context) (err error) {
-	t := new(models.Telegram)
-	if err = c.Bind(t); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/SendMessage?text=%s&chat_id=%s&parse_mode=MarkdownV2", t.ApiKey, t.MsgText, t.ChatID)
+func Telegram(c *gin.Context) {
+	var telegram models.TelegramData
+	c.ShouldBindJSON(&telegram)
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/SendMessage?text=%s&chat_id=%s&parse_mode=MarkdownV2", telegram.ApiKey, telegram.MsgText, telegram.ChatID)
 	resp, gErr := http.Get(url)
 	if gErr != nil {
-		r := &models.Response{
-			Status: 0,
-			Msg:    gErr.Error(),
-			Data:   nil,
-		}
-		return c.JSON(http.StatusOK, r)
+		c.JSON(200, errorResponse(gErr.Error()))
+		return
 	}
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
-	var telegramResponse models.TelegramResponse
+	var telegramResponse models.TelegramResponseData
 	json.Unmarshal(body, &telegramResponse)
 	if !telegramResponse.Ok {
-		r := &models.Response{
-			Status: 0,
-			Msg:    telegramResponse.Description,
-			Data:   telegramResponse.Result,
-		}
-		return c.JSON(http.StatusOK, r)
+		c.JSON(200, errorResponse(telegramResponse.Description))
+		return
 	}
-	r := &models.Response{
-		Status: 1,
-		Msg:    "消息发送成功",
-		Data:   telegramResponse.Result,
-	}
-	return c.JSON(http.StatusOK, r)
+	c.JSON(200, successResponse("Send success", telegramResponse.Result))
 }
 
 var imageIndex int
 
-func Image(c echo.Context) error {
+func Image(c *gin.Context) {
 	var files []string
 
 	err := filepath.Walk(ImagePath, func(path string, info os.FileInfo, err error) error {
@@ -73,13 +51,10 @@ func Image(c echo.Context) error {
 		return nil
 	})
 	if err != nil || len(files) < 2 {
-		r := &models.Response{
-			Status: 0,
-			Msg:    "Get image error",
-			Data:   nil,
-		}
-		return c.JSON(http.StatusOK, r)
+		c.JSON(200, errorResponse("Image count < 2"))
+		return
 	}
+
 	for {
 		randomIndex := rand.Intn(len(files) - 1)
 		if randomIndex != imageIndex {
@@ -87,6 +62,35 @@ func Image(c echo.Context) error {
 			break
 		}
 	}
-	return c.File(files[imageIndex])
+	var imageData models.ImageData
+	c.BindQuery(&imageData)
+	if imageData.Height != 0 && imageData.Width != 0 {
+		filePath, err := utils.ClipImageWithTmpFile(files[imageIndex], imageData.Width, imageData.Height)
+		defer os.Remove(filePath)
+		if err != nil {
+			c.JSON(200, errorResponse(err.Error()))
+			return
+		}
+		c.File(filePath)
+		return
+	}
+	c.File(files[imageIndex])
+
+}
+
+func errorResponse(msg string) *models.Response {
+	return &models.Response{
+		Status: 0,
+		Msg:    msg,
+		Data:   nil,
+	}
+}
+
+func successResponse(msg string, data map[string]interface{}) *models.Response {
+	return &models.Response{
+		Status: 1,
+		Msg:    msg,
+		Data:   data,
+	}
 
 }
