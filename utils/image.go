@@ -1,23 +1,22 @@
 package utils
 
 import (
-	"bytes"
-	"io"
+	"image/png"
 	"os"
 
-	"github.com/chai2010/webp"
 	"github.com/nfnt/resize"
 )
 
 func ClipImageWithTmpFile(sourcePath string, width, height int) (string, error) {
 	// 读取源文件
-	srcFile, err := os.ReadFile(sourcePath)
+	srcFile, err := os.Open(sourcePath)
 	if err != nil {
 		return "", err
 	}
+	defer srcFile.Close()
 
-	// 解码 WebP 图像
-	srcImg, err := webp.DecodeRGB(srcFile)
+	// 解码 PNG 图像
+	srcImg, err := png.Decode(srcFile)
 	if err != nil {
 		return "", err
 	}
@@ -26,21 +25,15 @@ func ClipImageWithTmpFile(sourcePath string, width, height int) (string, error) 
 	dstImg := resize.Resize(uint(width), uint(height), srcImg, resize.Lanczos3)
 
 	// 创建临时文件
-	dstFile, err := os.CreateTemp("", "image-*.webp")
+	dstFile, err := os.CreateTemp("", "image-*.png")
 	if err != nil {
 		return "", err
 	}
+	defer dstFile.Close()
 
-	// 将裁剪后的图像编码为 WebP 格式，然后写入临时文件
-	dstData, err := webp.EncodeRGB(dstImg, 90)
+	// 将裁剪后的图像编码为 PNG 格式，然后写入临时文件
+	err = png.Encode(dstFile, dstImg)
 	if err != nil {
-		dstFile.Close()
-		os.Remove(dstFile.Name())
-		return "", err
-	}
-	_, err = io.Copy(dstFile, bytes.NewReader(dstData))
-	if err != nil {
-		dstFile.Close()
 		os.Remove(dstFile.Name())
 		return "", err
 	}
