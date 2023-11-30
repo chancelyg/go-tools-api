@@ -1,59 +1,50 @@
 package utils
 
 import (
-	"errors"
-	"image"
-	"image/jpeg"
-	"image/png"
-	"io/ioutil"
+	"bytes"
+	"io"
 	"os"
-	"strings"
+
+	"github.com/chai2010/webp"
+	"github.com/nfnt/resize"
 )
 
-func imageClipCompliant(img image.Image, width int, height int) bool {
-	return width > img.Bounds().Max.X || height > img.Bounds().Max.Y || width < 0 || height < 0
-}
-
-func ClipImage(filePath string, width int, height int) (image.Image, error) {
-	fileExtension := strings.Split(filePath, ".")[len(strings.Split(filePath, "."))-1]
-	f, err := os.Open(filePath)
-	if err != nil {
-		panic(err)
-	}
-	// decode图片
-	switch fileExtension {
-	case "png":
-		img, _ := png.Decode(f)
-		if imageClipCompliant(img, width, height) {
-			return nil, errors.New("not support size")
-		}
-		return img.(*image.RGBA).SubImage(image.Rect(0, 0, width, height)).(*image.RGBA), nil
-	case "jpeg":
-	case "jpg":
-		img, _ := jpeg.Decode(f)
-		if imageClipCompliant(img, width, height) {
-			return nil, errors.New("not support size")
-		}
-		return img.(*image.YCbCr).SubImage(image.Rect(0, 0, width, height)).(*image.YCbCr), nil
-	}
-	panic("Not support format")
-
-}
-
-func ClipImageWithTmpFile(filePath string, width int, height int) (string, error) {
-	image, err := ClipImage(filePath, width, height)
+func ClipImageWithTmpFile(sourcePath string, width, height int) (string, error) {
+	// 读取源文件
+	srcFile, err := os.ReadFile(sourcePath)
 	if err != nil {
 		return "", err
 	}
 
-	file, err := ioutil.TempFile("", "IMAGE_*_.png")
+	// 解码 WebP 图像
+	srcImg, err := webp.DecodeRGB(srcFile)
 	if err != nil {
 		return "", err
 	}
 
-	err = png.Encode(file, image)
+	// 裁剪图像
+	dstImg := resize.Resize(uint(width), uint(height), srcImg, resize.Lanczos3)
+
+	// 创建临时文件
+	dstFile, err := os.CreateTemp("", "image-*.webp")
 	if err != nil {
 		return "", err
 	}
-	return file.Name(), nil
+
+	// 将裁剪后的图像编码为 WebP 格式，然后写入临时文件
+	dstData, err := webp.EncodeRGB(dstImg, 90)
+	if err != nil {
+		dstFile.Close()
+		os.Remove(dstFile.Name())
+		return "", err
+	}
+	_, err = io.Copy(dstFile, bytes.NewReader(dstData))
+	if err != nil {
+		dstFile.Close()
+		os.Remove(dstFile.Name())
+		return "", err
+	}
+
+	// 返回临时文件的路径
+	return dstFile.Name(), nil
 }

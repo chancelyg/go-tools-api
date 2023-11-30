@@ -4,3 +4,4 @@ dist/
 .goreleaser.yml
 *.log
 conf/app.conf
+webp/

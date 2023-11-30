@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -64,7 +65,18 @@ func main() {
 	}))
 	router.Use(gin.Recovery())
 
-	controllers.ImagePath = cfg.Section("image").Key("path").String()
+	var files []string
+	err = filepath.Walk(cfg.Section("image").Key("path").String(), func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	controllers.ImageList = files
 
 	// Routes
 	router.GET("/rest/api/v1/ip", controllers.IP)

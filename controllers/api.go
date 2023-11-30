@@ -9,12 +9,11 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
 
-var ImagePath string
+var ImageList []string
 
 // Handler
 func IP(c *gin.Context) {
@@ -41,41 +40,59 @@ func Telegram(c *gin.Context) {
 	c.JSON(200, successResponse("Send success", telegramResponse.Result))
 }
 
-var imageIndex int
+var imageMap = map[string]int{}
 
 func Image(c *gin.Context) {
-	var files []string
-
-	err := filepath.Walk(ImagePath, func(path string, info os.FileInfo, err error) error {
-		files = append(files, path)
-		return nil
-	})
-	if err != nil || len(files) < 2 {
-		c.JSON(200, errorResponse("Image count < 2"))
+	if len(ImageList) < 2 {
+		c.JSON(200, errorResponse("The number for image collections is to small."))
 		return
 	}
 
-	for {
-		randomIndex := rand.Intn(len(files) - 1)
-		if randomIndex != imageIndex {
-			imageIndex = randomIndex
-			break
+	var imageData models.ImageData
+	if err := c.BindQuery(&imageData); err != nil {
+		c.JSON(200, errorResponse(err.Error()))
+		return
+	}
+
+	maxSize := 4096
+
+	if imageData.Width > maxSize || imageData.Height > maxSize {
+		c.JSON(200, errorResponse("The resolution of the image to high."))
+		return
+	}
+
+	imageIndex := rand.Intn(len(ImageList))
+
+	if imageData.Id != "" {
+		c.Writer.Header().Set("Etag", imageData.Id)
+		if c.Writer.Header().Get("Etag") == c.GetHeader("If-None-Match") {
+			c.Status(http.StatusNotModified)
+			return
+		}
+		// Cache for 3 months.
+		c.Writer.Header().Set("Cache-Control", "public, max-age=8035200")
+		if value, exist := imageMap[imageData.Id]; exist {
+			imageIndex = value
+		} else {
+			imageMap[imageData.Id] = imageIndex
 		}
 	}
-	var imageData models.ImageData
-	c.BindQuery(&imageData)
+
+	var filePath string
+	var err error
+
 	if imageData.Height != 0 && imageData.Width != 0 {
-		filePath, err := utils.ClipImageWithTmpFile(files[imageIndex], imageData.Width, imageData.Height)
-		defer os.Remove(filePath)
+		filePath, err = utils.ClipImageWithTmpFile(ImageList[imageIndex], imageData.Width, imageData.Height)
 		if err != nil {
 			c.JSON(200, errorResponse(err.Error()))
 			return
 		}
-		c.File(filePath)
-		return
+		defer os.Remove(filePath)
+	} else {
+		filePath = ImageList[imageIndex]
 	}
-	c.File(files[imageIndex])
 
+	c.File(filePath)
 }
 
 func errorResponse(msg string) *models.Response {

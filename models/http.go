@@ -19,7 +19,8 @@ type TelegramResponseData struct {
 	Description string                 `json:"description"`
 }
 
-type ImageData struct{
-	Width int `form:"width"`
-	Height int `form:"height"`
+type ImageData struct {
+	Id     string `form:"id"`
+	Width  int    `form:"width"`
+	Height int    `form:"height"`
 }
