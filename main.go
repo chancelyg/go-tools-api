@@ -12,35 +12,25 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-ini/ini"
 )
 
 func main() {
-	h := flag.Bool("h", false, "--help")
-	conf := flag.String("c", "app.conf", "app.conf path")
+	host := flag.String("host", "localhost", "liscen host")
+	port := flag.Int("port", 8085, "liscen port")
+	imageDir := flag.String("image", "./webp", "image folder")
+
+	help := flag.Bool("h", false, "show help")
+
 	flag.Parse()
-	if *h {
+
+	if *help {
 		flag.Usage()
-	}
-	_, err := os.Stat(*conf)
-	if err != nil {
-		fmt.Println("app.conf not found")
-		os.Exit(-1)
+		return
 	}
 
-	cfg, err := ini.Load(*conf)
-	if err != nil {
-		log.Fatal("Fail to read file: ", err)
-		os.Exit(-1)
-	}
-
-	host := cfg.Section("general").Key("host").String()
-	port, err := cfg.Section("general").Key("port").Int()
-	if err != nil {
-		log.Fatal("Read conf error: ", err)
-		os.Exit(-1)
-	}
-
+	fmt.Printf("Host: %s\n", *host)
+	fmt.Printf("Port: %d\n", *port)
+	fmt.Printf("Image Directory: %s\n", *imageDir)
 	router := gin.Default()
 
 	// Logging to a file.
@@ -66,13 +56,13 @@ func main() {
 	router.Use(gin.Recovery())
 
 	var files []string
-	err = filepath.Walk(cfg.Section("image").Key("path").String(), func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(*imageDir, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			files = append(files, path)
 		}
 		return nil
 	})
-	if err != nil {
+	if err != nil || len(files) < 2 {
 		log.Fatal(err)
 	}
 
@@ -86,6 +76,6 @@ func main() {
 	router.GET("/rest/api/v1/image", controllers.Image)
 
 	// Start server
-	router.Run(host + ":" + strconv.Itoa(port))
+	router.Run(*host + ":" + strconv.Itoa(*port))
 	// r.Logger.Fatal(e.Start(fmt.Sprintf("%s:%d", host, port)))
 }

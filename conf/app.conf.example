@@ -1,6 +1,0 @@
-[general]
-host = 0.0.0.0
-port = 8042
-
-[image]
-path = /home/chancel/images
