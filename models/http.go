@@ -1,9 +1,10 @@
 package models
 
 type Response struct {
-	Status int                    `json:"status"`
-	Msg    string                 `json:"msg"`
-	Data   map[string]interface{} `json:"data"`
+	Status  int                    `json:"status"`
+	Msg     string                 `json:"msg"`
+	Data    map[string]interface{} `json:"data"`
+	Version string                 `json:"version"`
 }
 
 type TelegramData struct {

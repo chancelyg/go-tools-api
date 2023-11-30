@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"go-tools-api/m/dependencies"
 	"go-tools-api/m/models"
 	"go-tools-api/m/utils"
 	"io/ioutil"
@@ -97,17 +98,19 @@ func Image(c *gin.Context) {
 
 func errorResponse(msg string) *models.Response {
 	return &models.Response{
-		Status: 0,
-		Msg:    msg,
-		Data:   nil,
+		Status:  0,
+		Msg:     msg,
+		Data:    nil,
+		Version: dependencies.Version,
 	}
 }
 
 func successResponse(msg string, data map[string]interface{}) *models.Response {
 	return &models.Response{
-		Status: 1,
-		Msg:    msg,
-		Data:   data,
+		Status:  1,
+		Msg:     msg,
+		Data:    data,
+		Version: dependencies.Version,
 	}
 
 }
