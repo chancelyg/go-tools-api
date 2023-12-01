@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"go-tools-api/m/dependencies"
 	"go-tools-api/m/models"
 	"math/rand"
@@ -40,20 +41,19 @@ func Image(c *gin.Context) {
 
 	imageIndex := rand.Intn(len(ImageList))
 
+	eTag := fmt.Sprintf("%s_%dx%d", imageData.Id, imageData.Width, imageData.Height)
+
+	// Status not modified
 	if imageData.Id != "" {
-		c.Writer.Header().Set("Etag", imageData.Id)
-		if c.Writer.Header().Get("Etag") == c.GetHeader("If-None-Match") {
+		if c.GetHeader("If-None-Match") == eTag {
 			c.Status(http.StatusNotModified)
 			return
 		}
-		// Cache for 3 months.
-		c.Writer.Header().Set("Cache-Control", "public, max-age=8035200")
-		if value, exist := imageMap[imageData.Id]; exist {
-			imageIndex = value
-		} else {
-			imageMap[imageData.Id] = imageIndex
-		}
 	}
+	// Cache for 3 months.
+	c.Writer.Header().Set("Etag", eTag)
+	c.Writer.Header().Set("Cache-Control", "public, max-age=8035200")
+	imageMap[eTag] = imageIndex
 
 	var filePath string
 	var err error
