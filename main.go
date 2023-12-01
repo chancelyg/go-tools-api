@@ -17,7 +17,7 @@ import (
 func main() {
 	host := flag.String("host", "localhost", "liscen host")
 	port := flag.Int("port", 8085, "liscen port")
-	imageDir := flag.String("image", "./webp", "image folder")
+	imageDir := flag.String("image", "./images", "image folder(jpg type)")
 
 	help := flag.Bool("h", false, "show help")
 
@@ -70,8 +70,6 @@ func main() {
 
 	// Routes
 	router.GET("/rest/api/v1/ip", controllers.IP)
-
-	router.POST("/rest/api/v1/telegram", controllers.Telegram)
 
 	router.GET("/rest/api/v1/image", controllers.Image)
 

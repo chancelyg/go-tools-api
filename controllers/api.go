@@ -1,12 +1,8 @@
 package controllers
 
 import (
-	"encoding/json"
-	"fmt"
 	"go-tools-api/m/dependencies"
 	"go-tools-api/m/models"
-	"go-tools-api/m/utils"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -19,26 +15,6 @@ var ImageList []string
 // Handler
 func IP(c *gin.Context) {
 	c.JSON(200, successResponse("Query success", map[string]interface{}{"ip": c.ClientIP()}))
-}
-
-func Telegram(c *gin.Context) {
-	var telegram models.TelegramData
-	c.ShouldBindJSON(&telegram)
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/SendMessage?text=%s&chat_id=%s&parse_mode=MarkdownV2", telegram.ApiKey, telegram.MsgText, telegram.ChatID)
-	resp, gErr := http.Get(url)
-	if gErr != nil {
-		c.JSON(200, errorResponse(gErr.Error()))
-		return
-	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	var telegramResponse models.TelegramResponseData
-	json.Unmarshal(body, &telegramResponse)
-	if !telegramResponse.Ok {
-		c.JSON(200, errorResponse(telegramResponse.Description))
-		return
-	}
-	c.JSON(200, successResponse("Send success", telegramResponse.Result))
 }
 
 var imageMap = map[string]int{}
@@ -83,7 +59,7 @@ func Image(c *gin.Context) {
 	var err error
 
 	if imageData.Height != 0 && imageData.Width != 0 {
-		filePath, err = utils.ClipImageWithTmpFile(ImageList[imageIndex], imageData.Width, imageData.Height)
+		filePath, err = dependencies.ClipImageWithTmpFile(ImageList[imageIndex], imageData.Width, imageData.Height)
 		if err != nil {
 			c.JSON(200, errorResponse(err.Error()))
 			return
@@ -93,7 +69,13 @@ func Image(c *gin.Context) {
 		filePath = ImageList[imageIndex]
 	}
 
-	c.File(filePath)
+	img, err := dependencies.CompressImage(filePath)
+	if err != nil {
+		c.JSON(200, errorResponse(err.Error()))
+		return
+	}
+
+	c.Data(http.StatusOK, "image/jpeg", img)
 }
 
 func errorResponse(msg string) *models.Response {
