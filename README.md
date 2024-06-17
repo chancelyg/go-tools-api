@@ -14,7 +14,7 @@ app.conf文件的内容可参考仓库内conf/app.conf.example文件
 # 3. 二次开发
 ## 3.1. 环境依赖
 Go版本
-* go version go1.15.2 linux/amd64
+* go version go1.21.4 linux/amd64
 
 环境搭建
 ```shell
@@ -46,5 +46,4 @@ go get -u
 ```
 # 4. 感谢
 项目技术依赖
-* gin
-  * https://github.com/gin-gonic/gin
+* https://github.com/gin-gonic/gin

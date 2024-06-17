@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Response struct {
 	Status  int                    `json:"status"`
 	Msg     string                 `json:"msg"`
@@ -24,4 +26,9 @@ type ImageData struct {
 	Id     string `form:"id"`
 	Width  int    `form:"width"`
 	Height int    `form:"height"`
+}
+
+type AnyJsonData struct {
+	Data   map[string]interface{}
+	Expiry time.Time
 }

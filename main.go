@@ -18,6 +18,8 @@ func main() {
 	host := flag.String("host", "localhost", "liscen host")
 	port := flag.Int("port", 8085, "liscen port")
 	imageDir := flag.String("image", "./images", "image folder(jpg type)")
+	jsonValidityDays := flag.Int("jsonValidityDays", 31, "json validity days")
+	jsonMaxMemorySize := flag.Int64("jsonMaxMemorySize", 32, "json max memory size")
 
 	help := flag.Bool("h", false, "show help")
 
@@ -67,11 +69,14 @@ func main() {
 	}
 
 	controllers.ImageList = files
+	controllers.MaxMemory = *jsonMaxMemorySize << 20
+	controllers.JsonValidityDays = *jsonValidityDays
 
 	// Routes
 	router.GET("/rest/api/v1/ip", controllers.IP)
-
 	router.GET("/rest/api/v1/image", controllers.Image)
+	router.GET("/rest/api/v1/anyjson", controllers.AnyJsonWithGet)
+	router.POST("/rest/api/v1/anyjson", controllers.AnyJsonWithPost)
 
 	// Start server
 	router.Run(*host + ":" + strconv.Itoa(*port))
