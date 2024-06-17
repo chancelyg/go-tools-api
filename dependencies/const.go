@@ -1,3 +1,3 @@
 package dependencies
 
-const Version = "V24.06.17"
+const Version = "V1.0.0"
