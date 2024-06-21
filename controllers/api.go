@@ -134,7 +134,6 @@ func AnyJsonWithPost(c *gin.Context) {
 	currentSize += newSize
 	mu.Unlock()
 
-	c.JSON(http.StatusOK, gin.H{"message": ""})
 	c.JSON(200, successResponse("Data stored successfully", nil))
 }
 

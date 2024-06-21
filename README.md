@@ -3,13 +3,20 @@
 
 
 # 2. 部署
-下载二进制程序后直接运行即可
+下载二进制程序后直接运行
 
 ```bash
-./go-tools-api -c app.conf
+./go-tools-api
 ```
 
-app.conf文件的内容可参考仓库内conf/app.conf.example文件
+运行参数如下：
+
+* **-host**：监听地址，默认 `127.0.0.1`
+* **-port**：监听端口，默认 `8085`
+* **-image**：图片API的文件夹
+* **-jsonMaxMemorySize**： `anyjson` api接口存储的内存占用量（Mib），默认32Mb
+* **-jsonValidityDays**：`anyjson` api接口存储的json有效期（天），默认31天
+
 
 # 3. 二次开发
 ## 3.1. 环境依赖
